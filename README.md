@@ -16,8 +16,6 @@ The responsive version for wallets and wallet adapter may not function or work a
 ## Installation
 
 ```bash
-npm install
-# or
 yarn install
 ```
 
@@ -26,8 +24,6 @@ yarn install
 Next, run the development server:
 
 ```bash
-npm run dev
-# or
 yarn dev
 ```
 
