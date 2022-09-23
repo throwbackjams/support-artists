@@ -6,14 +6,17 @@ import { ArtistAccount } from "models/ArtistAccount";
 import * as borsh from '@project-serum/borsh'
 import { BorshAccountsCoder, BorshInstructionCoder } from "@project-serum/anchor";
 
+import { ArtistCard } from "components/ArtistCard";
+
+import { notify } from "utils/notifications";
+
 export const SupportView: FC = ({ }) => {
 	const connection = new web3.Connection(web3.clusterApiUrl('devnet'))
-	const [artists, setArtists] = useState<ArtistAccount[]>([])
+	const [artists, setArtists] = useState<ArtistAccount[]>([]);
+	const [SupportAmt, setSupportAmt] = useState("");
 	const wallet = useWallet();
 
-
 	const programID = new web3.PublicKey("Fm7tyJyJSCKZLijYMrgm86Ac8k7VJHANkrmV3q3eZaKv");
-
 
 	const opts: web3.ConfirmOptions = {
 		preflightCommitment: "processed"
@@ -30,39 +33,6 @@ export const SupportView: FC = ({ }) => {
 		// Create a program that you can call
 		return new anchor.Program(idl, programID, getProvider());
 	};
-
-	// const initialize = async () => {
-	// 	try {
-	// 		const provider = getProvider();
-	// 		const program = getProgram();
-
-	// 		console.log("ding");
-
-	// 		const name: string = "MLH Fellow - Jimii";
-	// 		const about: string = "I'm an incredible artist and you should support me. Thank you!"
-
-	// 		const [artistStatePDA,] = await PublicKey
-	// 			.findProgramAddress(
-	// 				[
-	// 					anchor.utils.bytes.utf8.encode("artist-account"),
-	// 					initializer.publicKey.toBuffer()
-	// 				],
-	// 				programID
-	// 			);
-	// 		await (await program).methods.initializeArtist(name, about).accounts({
-	// 			initializer: initializer.publicKey,
-	// 			artistState: artistStatePDA,
-	// 			beneficiary: beneficiary.publicKey
-	// 		})
-	// 			.signers([initializer])
-	// 			.rpc();
-
-	// 		console.log("Created a new BaseAccount w/ address:", initializer.publicKey.toString());
-	// 		await fetchArtists();
-	// 	} catch (err) {
-	// 		console.error("error initializing the program ->", err);
-	// 	}
-	// }
 
 	const fetchArtists = async () => {
 		try {
@@ -87,47 +57,48 @@ export const SupportView: FC = ({ }) => {
 						artists.push(artist)
 						console.log("Artist Account: ", artist)
 
+
 					} catch (error) {
 						console.log("Account deserialization error for Account: ", accountPubkey.toBase58())
-						console.log("Error: ",error)
+						console.log("Error: ", error)
 					}
 					setArtists(artists)
 				})
 			})
 
 			console.log("Artists", artists)
-			// const accounts = connection.getProgramAccounts(programID).then(async (accounts) => {
-			// 	console.log(accounts)
-			// 	const artists: ArtistAccount[] = accounts.map((accountObject) => {
-
-			// 		let accountPubkey = new web3.PublicKey(accountObject.pubkey.toBase58())
-			// 		console.log("Account Pubkey: ", accountPubkey)
-			// 		let artistAccountData = program.account.artist.fetch(accountPubkey)
-			// 		console.log("Artist account data", artistAccountData)
-
-			// 		// let decodedAccountData = coder.decode("Artist", account.data)
-		
-			// 		// // const artist = program.account.Artist.fetch(new web3.PublicKey(object.pubkey.toBase58()))
-
-			// 		const deserializedData = ArtistAccount.deserialize(accountObject.account.data)
-			// 		console.log(deserializedData)
-			// 		return deserializedData
-			// 	})
-
-			// 	setArtists(artists)
-
-			// })
 		} catch (err) {
 			console.error("encountered error fetching artists\n", err);
 		}
 	}
 
-	useEffect(() => {
-		console.log("Fetching artists")
-		fetchArtists()
-	}, []);
+	//function responsible for transfer of sol to artist
+	const supportArtist = async (address) => {
+		if (SupportAmt === "") {
+			notify({ type: 'error', message: 'Please fill in amount!' });
+			return;
+		}
+		let amt = 1_000_000 * Number(SupportAmt);
 
-	// initialize().then().catch(err => console.log("error initing stuff"));
+		// Create Simple Transaction
+		let transaction = new web3.Transaction();
+
+		// Add an instruction to execute
+		transaction.add(web3.SystemProgram.transfer({
+			fromPubkey: wallet.publicKey,
+			toPubkey: address,
+			lamports: 1_000_000 * Number(SupportAmt),
+		}));
+
+		let signature = await wallet.sendTransaction(transaction, connection);
+		console.log('signature', signature);
+		notify({ type: 'success', message: 'Transaction successful!', txid: signature });
+	}
+
+	useEffect(() => {
+		console.log("Fetching artists");
+		fetchArtists();
+	}, []);
 
 	return (
 		<div className="md:hero mx-auto p-4">
@@ -136,14 +107,28 @@ export const SupportView: FC = ({ }) => {
 					Support An Artist
 				</h1>
 				{/* CONTENT GOES HERE */}
-				<div className="text-center">
+
+				<div>
 					{artists.map(artist => {
-						return <div>{`Artist Name: ${artist.name}`}<br></br>
-						{`Artist about: ${artist.about}`}<br></br>
-						{`Artist Wallet: ${artist.wallet}`}
-						</div>
+						return <ArtistCard key={artist.wallet}
+							name={artist.name}
+							about={artist.about}
+							supportArtistFn={() => supportArtist(artist.wallet)}
+							inputOnChangeFn={(e) => setSupportAmt(e.target.value)}
+						/>
 					})}
 				</div>
+
+				{/* 
+				<div>
+					<ArtistCard
+						name="Jimii"
+						about="support me I am awesome"
+						supportArtistFn={() => supportArtist("935zXBkdmdCFxm7zukfpGXCEsh9DRYSCWpSoTVuq7QZa")}
+						inputOnChangeFn={(e) => setSupportAmt(e.target.value)}
+					/>
+				</div> */}
+
 			</div>
 		</div>
 	);
