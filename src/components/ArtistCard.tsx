@@ -16,7 +16,7 @@ export const ArtistCard: FC<cardProps> = ({ name, about, supportArtistFn }) => {
 				<h2 className="card-title">{name}</h2>
 				<p>{about}</p>
 				<div className="card-actions">
-					<button onClick={supportArtistFn} className="btn btn-primary">Support Artist</button>
+					<button onClick={supportArtistFn} className="btn btn-primary">Support Artist $10</button>
 				</div>
 			</div>
 		</div>
