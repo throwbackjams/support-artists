@@ -87,7 +87,7 @@ export const SupportView: FC = ({ }) => {
 		transaction.add(web3.SystemProgram.transfer({
 			fromPubkey: wallet.publicKey,
 			toPubkey: address,
-			lamports: 1_000_000 * Number(SupportAmt),
+			lamports: 1_000_000_000 * Number(SupportAmt),
 		}));
 
 		let signature = await wallet.sendTransaction(transaction, connection);
